@@ -3,42 +3,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>AlgoPOS — Inventory &amp; Resource Management</title>
+    <title>Dynamex — Inventory &amp; Cash Drawer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css" />
     <link rel="icon" href="${pageContext.request.contextPath}/images/logo.png" />
-    <style>
-        .algo-select {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--navy);
-            font-weight: 700;
-            border-radius: 8px;
-            padding: 8px;
-            width: 100%;
-            cursor: pointer;
-            outline: none;
-            font-family: inherit;
-        }
-        .algo-select:focus {
-            border-color: var(--teal);
-            box-shadow: 0 0 0 3px rgba(46, 191, 165, 0.1);
-        }
-    </style>
 </head>
 <body>
 
 <header class="topbar">
     <div class="brand">
-        <img src="${pageContext.request.contextPath}/images/logo.png" alt="AlgoPOS" />
+        <img src="${pageContext.request.contextPath}/images/logo.png" alt="Dynamex" />
         <div class="brand-text">
-            <h1>AlgoPOS</h1>
-            <small>Optimized Transaction System</small>
+            <h1>Dynamex</h1>
+            <small>Optimized POS Platform</small>
         </div>
     </div>
     <nav>
         <a href="${pageContext.request.contextPath}/">Transaction Hub</a>
-        <a href="${pageContext.request.contextPath}/inventory.jsp" class="active">Inventory Dashboard</a>
+        <a href="${pageContext.request.contextPath}/inventory.jsp" class="active">Inventory &amp; Drawer</a>
     </nav>
     <div class="clock" id="clock">--:--:--</div>
 </header>
@@ -62,7 +47,7 @@
             <div class="delta" id="mSpeedup">&mdash;</div>
         </div>
         <div class="metric-card">
-            <div class="label">DP Change Maker</div>
+            <div class="label">Bounded DP — Change</div>
             <div class="value" id="mDpUnits">&mdash;</div>
             <div class="delta" id="mGreedyCmp">&mdash;</div>
         </div>
@@ -70,25 +55,25 @@
             <div class="label">Calculation Engine</div>
             <div class="value" style="margin: 10px 0;">
                 <select id="algoSelect" class="algo-select">
-                    <option value="dp">Dynamic Programming</option>
-                    <option value="greedy">Greedy Algorithm</option>
+                    <option value="dp">Bounded Dynamic Programming</option>
+                    <option value="greedy">Bounded Greedy</option>
                 </select>
             </div>
-            <div class="delta" style="color: var(--teal);">Logic for checkout</div>
+            <div class="delta">Logic for checkout</div>
         </div>
     </div>
 
     <section class="card" style="margin-bottom: 24px;">
         <div class="card-header">
             <div>
-                <h2>Inventory Table</h2>
+                <h2>Inventory Catalogue</h2>
                 <div class="subtitle">Pre-sorted by Product ID — required for Binary Search.</div>
             </div>
             <button class="btn btn-secondary" id="refreshMetricsBtn">Run Algorithm Test</button>
         </div>
         <div class="card-body">
             <div class="inventory-toolbar">
-                <input type="text" id="invSearch" placeholder="Filter by ID or name…" />
+                <input type="text" id="invSearch" placeholder="Filter by ID or name&hellip;" />
                 <div class="pager">
                     <button id="firstBtn">&laquo;</button>
                     <button id="prevBtn">&lsaquo;</button>
@@ -112,12 +97,50 @@
         </div>
     </section>
 
+    <section class="card" style="margin-bottom: 24px;">
+        <div class="card-header">
+            <div>
+                <h2>Cash Register Drawer</h2>
+                <div class="subtitle">
+                    Track and adjust the exact quantity of each bill &amp; coin
+                    in the drawer. The Bounded DP only uses what is physically
+                    here.
+                </div>
+            </div>
+            <span class="units-saved-pill">Bounded Supply</span>
+        </div>
+        <div class="card-body">
+
+            <div class="reg-summary">
+                <div class="stat">
+                    <span class="k">Total Cash on Hand</span>
+                    <span class="v" id="regTotalCash">&#8369;0.00</span>
+                </div>
+                <div class="stat">
+                    <span class="k">Bills</span>
+                    <span class="v" id="regBillCount">0</span>
+                </div>
+                <div class="stat">
+                    <span class="k">Coins</span>
+                    <span class="v" id="regCoinCount">0</span>
+                </div>
+                <div class="stat">
+                    <span class="k">Distinct Denominations Active</span>
+                    <span class="v" id="regActiveCount">0</span>
+                </div>
+            </div>
+
+            <div class="register-grid" id="registerList"></div>
+        </div>
+    </section>
+
     <section class="card">
         <div class="card-header">
             <div>
-                <h2>Denomination Manager</h2>
+                <h2>Denomination Availability</h2>
                 <div class="subtitle">
-                    Toggle bills/coins as &ldquo;Out of Stock&rdquo; to test scarcity scenarios.
+                    Toggle bills/coins on or off entirely (e.g. to simulate
+                    out-of-stock scenarios in the algorithm test).
                 </div>
             </div>
             <span class="units-saved-pill">Resource Management</span>

@@ -45,8 +45,13 @@ public class PaymentServlet extends HttpServlet {
         TransactionEngine.TransactionResult result =
                 state.getEngine().computeChange(totalCent / 100.0, cashCent / 100.0, denoms);
 
-        if (result == null || result.dpUnits < 0) {
-            writeFailure(resp, "Cannot make exact change with the available denominations");
+        if (result == null) {
+            writeFailure(resp, "Invalid totals supplied");
+            return;
+        }
+        if (!result.feasible || result.dpUnits < 0) {
+            writeFailure(resp, result.message != null ? result.message
+                    : "Cannot make exact change with the cash drawer's current quantities");
             return;
         }
 
