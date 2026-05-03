@@ -1,16 +1,13 @@
-<%-- 
-    Document   : index
-    Created on : 04 28, 26, 4:01:54 PM
-    Author     : gabbipagkaliwangan
---%>
-
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>AlgoPOS — Search &amp; Transaction Hub</title>
+    <title>Dynamex — Transaction Hub</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/style.css" />
     <link rel="icon" href="${pageContext.request.contextPath}/images/logo.png" />
 </head>
@@ -18,15 +15,15 @@
 
 <header class="topbar">
     <div class="brand">
-        <img src="${pageContext.request.contextPath}/images/logo.png" alt="AlgoPOS" />
+        <img src="${pageContext.request.contextPath}/images/logo.png" alt="Dynamex" />
         <div class="brand-text">
-            <h1>AlgoPOS</h1>
-            <small>Optimized Transaction System</small>
+            <h1>Dynamex</h1>
+            <small>Optimized POS Platform</small>
         </div>
     </div>
     <nav>
         <a href="${pageContext.request.contextPath}/" class="active">Transaction Hub</a>
-        <a href="${pageContext.request.contextPath}/inventory.jsp">Inventory Dashboard</a>
+        <a href="${pageContext.request.contextPath}/inventory.jsp">Inventory &amp; Drawer</a>
     </nav>
     <div class="clock" id="clock">--:--:--</div>
 </header>
@@ -101,8 +98,9 @@
                 <div class="info-banner" style="margin-top: 22px;">
                     <span class="icon">i</span>
                     <span>
-                        <strong>Algorithm:</strong> Binary Search runs in O(log n).
-                        With 10,000 products, the worst case takes only ~14 comparisons.
+                        <strong>Bounded DP:</strong> change is computed using
+                        only the bills &amp; coins physically held in the drawer
+                        — a 0/1 Knapsack variant of the coin-change problem.
                     </span>
                 </div>
             </div>
@@ -120,7 +118,6 @@
             <button class="modal-close" id="closeModal">&times;</button>
         </div>
         <div class="modal-body">
-            <!-- Left -->
             <div class="modal-left">
                 <div class="due-row">
                     <span class="label-strong">Total Due</span>
@@ -140,16 +137,17 @@
                 <div class="info-banner">
                     <span class="icon">i</span>
                     <span>
-                        <strong>Optimization Active</strong><br/>
-                        Dynamic Programming is calculating the minimum number of physical
-                        units for the return.
+                        <strong>Bounded Optimization Active</strong><br/>
+                        Dynamic Programming computes the minimum number of
+                        physical units, constrained by the actual quantity
+                        of each denomination in the drawer.
                     </span>
                 </div>
             </div>
 
             <div class="modal-right">
                 <div class="breakdown-head">
-                    <span class="label-tiny" style="color: var(--muted);">Optimal Breakdown</span>
+                    <span class="label-tiny">Optimal Breakdown</span>
                     <span class="units-saved-pill" id="savedPill">0 UNITS SAVED</span>
                 </div>
                 <div class="breakdown-list" id="breakdownList">
@@ -158,7 +156,7 @@
                     </div>
                 </div>
                 <div class="totals-row">
-                    <span>Total Units returned:</span>
+                    <span>Total units returned:</span>
                     <span class="total-units" id="totalUnits">0 units</span>
                 </div>
             </div>

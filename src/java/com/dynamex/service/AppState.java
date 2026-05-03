@@ -35,21 +35,21 @@ public class AppState {
     }
 
     private void seedDenominations() {
-        // Bills
-        denominations.add(new Denomination(100000, "P1000 Bill", true,  true));
-        denominations.add(new Denomination(50000,  "P500 Bill",  true,  true));
-        denominations.add(new Denomination(20000,  "P200 Bill",  true,  true));
-        denominations.add(new Denomination(10000,  "P100 Bill",  true,  true));
-        denominations.add(new Denomination(5000,   "P50 Bill",   true,  true));
+        // Bills (label, available, starting quantity in drawer)
+        denominations.add(new Denomination(100000, "P1000 Bill", true,  true, 10));
+        denominations.add(new Denomination(50000,  "P500 Bill",  true,  true, 20));
+        denominations.add(new Denomination(20000,  "P200 Bill",  true,  true, 25));
+        denominations.add(new Denomination(10000,  "P100 Bill",  true,  true, 40));
+        denominations.add(new Denomination(5000,   "P50 Bill",   true,  true, 40));
         // Coins
-        denominations.add(new Denomination(2000,   "P20 Coin",   false,  true));
-        denominations.add(new Denomination(1000,   "P10 Coin",   false, true));
-        denominations.add(new Denomination(500,    "P5 Coin",    false, true));
-        denominations.add(new Denomination(100,    "P1 Coin",    false, true));
-        denominations.add(new Denomination(25,     "P0.25 Coin", false, true));
-        denominations.add(new Denomination(10,     "P0.10 Coin", false, true));
-        denominations.add(new Denomination(5,      "P0.05 Coin", false, true));
-        denominations.add(new Denomination(1,      "P0.01 Coin", false, true));
+        denominations.add(new Denomination(2000,   "P20 Coin",   false, true, 50));
+        denominations.add(new Denomination(1000,   "P10 Coin",   false, true, 60));
+        denominations.add(new Denomination(500,    "P5 Coin",    false, true, 80));
+        denominations.add(new Denomination(100,    "P1 Coin",    false, true, 100));
+        denominations.add(new Denomination(25,     "P0.25 Coin", false, true, 100));
+        denominations.add(new Denomination(10,     "P0.10 Coin", false, true, 120));
+        denominations.add(new Denomination(5,      "P0.05 Coin", false, true, 150));
+        denominations.add(new Denomination(1,      "P0.01 Coin", false, true, 200));
     }
 
     public void setInventory(InventoryManager im) {

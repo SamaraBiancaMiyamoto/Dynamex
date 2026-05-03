@@ -236,8 +236,37 @@
     }
 
     // ----- Confirm + Receipt -----
-    confirmBtn.addEventListener("click", () => {
+    async function finalizeTransaction() {
+        if (!lastResult || !lastTotals) return null;
+        const totalCent = Math.round(lastTotals.total * 100);
+        const cashCent  = Math.round(parseFloat(cashIn.value) * 100);
+        try {
+            const r = await fetch(`${CTX}/api/finalize`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `total=${totalCent}&cash=${cashCent}`
+            });
+            const data = await r.json();
+            if (!r.ok || !data.success) {
+                toast(data.error || "Finalize failed", "error");
+                return null;
+            }
+            return data;
+        } catch (err) {
+            toast("Finalize failed: " + err.message, "error");
+            return null;
+        }
+    }
+
+    confirmBtn.addEventListener("click", async () => {
         if (!lastResult || !lastTotals) return;
+        confirmBtn.disabled = true;
+        const fin = await finalizeTransaction();
+        if (!fin) {
+            confirmBtn.disabled = false;
+            return;
+        }
+        toast("Drawer updated · " + fin.totalUnits + " units dispensed", "success");
         showReceipt(lastTotals, lastResult);
     });
     document.getElementById("printPreviewBtn").addEventListener("click", () => {
@@ -258,8 +287,8 @@
         const breakdown = res.breakdown.map(d => `<div class="line"><span>${escapeHtml(d.label)}</span><span>x ${d.count}</span></div>`).join("");
         const txnId = "TXN-" + Date.now().toString().slice(-8);
         r.innerHTML = `
-            <h3>ALGOPOS</h3>
-            <div class="center">Optimized Transaction System<br/>${new Date().toLocaleString("en-PH")}<br/>${txnId}</div>
+            <h3>DYNAMEX</h3>
+            <div class="center">Optimized POS Platform<br/>${new Date().toLocaleString("en-PH")}<br/>${txnId}</div>
             <hr/>
             ${items.join("")}
             <hr/>
@@ -272,7 +301,7 @@
             <div class="center" style="margin-bottom:8px;font-weight:bold;">Optimal Change (${res.totalUnits} units)</div>
             ${breakdown}
             <hr/>
-            <div class="center">Thank you for shopping!<br/>Powered by O(log n) + DP</div>
+            <div class="center">Thank you for shopping!<br/>Powered by O(log n) + Bounded DP</div>
             <div class="actions">
                 <button class="btn btn-secondary" id="printBtn" style="flex:1;">Print</button>
                 <button class="btn btn-primary" id="newTxnBtn" style="flex:1;">New Transaction</button>

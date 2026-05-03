@@ -23,24 +23,61 @@ public class DenominationServlet extends HttpServlet {
         // Accept both `denom` (front-end) and `value` (legacy) parameter names.
         String valueStr = req.getParameter("denom");
         if (valueStr == null) valueStr = req.getParameter("value");
-        String availStr = req.getParameter("available");
-        if (valueStr == null || availStr == null) {
-            JsonUtil.error(resp, 400, "Missing denom or available");
+        if (valueStr == null) {
+            JsonUtil.error(resp, 400, "Missing denom");
             return;
         }
+
+        int value;
         try {
-            int value = Integer.parseInt(valueStr);
-            boolean avail = Boolean.parseBoolean(availStr);
-            Denomination d = AppState.getInstance().findDenomination(value);
-            if (d == null) {
-                JsonUtil.error(resp, 404, "Unknown denomination");
-                return;
-            }
-            d.setAvailable(avail);
+            value = Integer.parseInt(valueStr);
         } catch (NumberFormatException nfe) {
             JsonUtil.error(resp, 400, "Bad denom value");
             return;
         }
+
+        Denomination d = AppState.getInstance().findDenomination(value);
+        if (d == null) {
+            JsonUtil.error(resp, 404, "Unknown denomination");
+            return;
+        }
+
+        String availStr = req.getParameter("available");
+        String qtyStr   = req.getParameter("quantity");
+        String deltaStr = req.getParameter("delta");
+
+        if (availStr == null && qtyStr == null && deltaStr == null) {
+            JsonUtil.error(resp, 400, "Provide at least one of: available, quantity, delta");
+            return;
+        }
+
+        if (availStr != null) {
+            d.setAvailable(Boolean.parseBoolean(availStr));
+        }
+
+        try {
+            if (qtyStr != null) {
+                int q = Integer.parseInt(qtyStr);
+                if (q < 0) {
+                    JsonUtil.error(resp, 400, "quantity must be >= 0");
+                    return;
+                }
+                d.setQuantity(q);
+            }
+            if (deltaStr != null) {
+                int delta = Integer.parseInt(deltaStr);
+                int next = d.getQuantity() + delta;
+                if (next < 0) {
+                    JsonUtil.error(resp, 400, "delta would drive quantity below zero");
+                    return;
+                }
+                d.setQuantity(next);
+            }
+        } catch (NumberFormatException nfe) {
+            JsonUtil.error(resp, 400, "Bad numeric parameter");
+            return;
+        }
+
         write(resp);
     }
 

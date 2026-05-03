@@ -23,15 +23,12 @@
     }
 
     const algoSelect = document.getElementById("algoSelect");
-    
-    // Default to 'dp' if no preference is saved
     const savedAlgo = localStorage.getItem("posAlgo") || "dp";
     algoSelect.value = savedAlgo;
-
     algoSelect.addEventListener("change", (e) => {
         const val = e.target.value;
         localStorage.setItem("posAlgo", val);
-        toast(`Engine set to ${val === 'dp' ? 'Optimal (DP)' : 'Greedy'}`, "success");
+        toast(`Engine set to ${val === 'dp' ? 'Bounded DP' : 'Bounded Greedy'}`, "success");
     });
 
     async function loadMetrics() {
@@ -41,11 +38,11 @@
         document.getElementById("mBinaryTime").textContent = (m.binaryTimeNs / 1000).toFixed(1) + " μs";
         document.getElementById("mBinaryComp").textContent = `${m.binaryComparisons} steps`;
         document.getElementById("mLinearTime").textContent = (m.linearTimeNs / 1000).toFixed(1) + " μs";
-        
+
         const speedup = m.binaryTimeNs > 0 ? (m.linearTimeNs / m.binaryTimeNs).toFixed(1) + "× faster" : "—";
         document.getElementById("mSpeedup").textContent = speedup;
 
-        document.getElementById("mDpUnits").textContent = m.dpUnits >= 0 ? `${m.dpUnits} units` : "n/a";
+        document.getElementById("mDpUnits").textContent = m.dpUnits >= 0 ? `${m.dpUnits} units` : "infeasible";
         const greedy = m.greedyUnits;
         document.getElementById("mGreedyCmp").textContent = greedy >= 0 ? `Greedy: ${greedy} units` : "Greedy: fails";
     }
@@ -85,15 +82,134 @@
     document.getElementById("nextBtn").onclick  = () => { if (page < totalPages) { page++; loadInventory(); } };
     document.getElementById("lastBtn").onclick  = () => { page = totalPages; loadInventory(); };
 
-    async function loadDenoms() {
-        const r = await fetch(`${CTX}/api/denominations`);
-        const data = await r.json();
+    const invSearch = document.getElementById("invSearch");
+    if (invSearch) {
+        let qTimer;
+        invSearch.addEventListener("input", e => {
+            clearTimeout(qTimer);
+            qTimer = setTimeout(() => {
+                query = e.target.value.trim();
+                page = 1;
+                loadInventory();
+            }, 200);
+        });
+    }
+
+    // ---------- Denomination + Register state ----------
+
+    let denomCache = [];
+
+    function formAvailUpdate(denom, available) {
+        return new URLSearchParams({ denom, available }).toString();
+    }
+    function formQtyUpdate(denom, quantity) {
+        return new URLSearchParams({ denom, quantity }).toString();
+    }
+    function formDelta(denom, delta) {
+        return new URLSearchParams({ denom, delta }).toString();
+    }
+
+    async function postDenom(body) {
+        const r = await fetch(`${CTX}/api/denominations`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body
+        });
+        if (!r.ok) {
+            try {
+                const err = await r.json();
+                throw new Error(err.error || "Update failed");
+            } catch (e) { throw new Error("Update failed"); }
+        }
+        return r.json();
+    }
+
+    function renderRegister() {
+        const list = document.getElementById("registerList");
+        if (!list) return;
+
+        let totalCash = 0, billCount = 0, coinCount = 0, activeCount = 0;
+
+        list.innerHTML = denomCache.map(d => {
+            if (d.available && d.quantity > 0) activeCount++;
+            const valuePeso = d.denom / 100;
+            const subtotal = valuePeso * d.quantity;
+            totalCash += subtotal;
+            if (d.isBill) billCount += d.quantity; else coinCount += d.quantity;
+
+            const cls = !d.available ? "disabled" : (d.quantity === 0 ? "empty" : "");
+            const tagCls = d.isBill ? "bill" : "coin";
+            const tagText = d.isBill ? "Bill" : "Coin";
+
+            return `
+                <div class="register-card ${cls}" data-denom="${d.denom}">
+                    <div class="reg-head">
+                        <div class="reg-label">${escapeHtml(d.label)}</div>
+                        <span class="reg-tag ${tagCls}">${tagText}</span>
+                    </div>
+                    <div class="reg-qty">
+                        <button data-act="dec" data-denom="${d.denom}" ${(!d.available || d.quantity <= 0) ? "disabled" : ""}>−</button>
+                        <input type="number" class="reg-qty-input" min="0" step="1"
+                               value="${d.quantity}" data-denom="${d.denom}"
+                               ${!d.available ? "disabled" : ""} />
+                        <button data-act="inc" data-denom="${d.denom}" ${!d.available ? "disabled" : ""}>+</button>
+                    </div>
+                    <div class="reg-foot">
+                        <span>Face value: <span class="reg-value">${peso(valuePeso)}</span></span>
+                        <span>Subtotal: <span class="reg-value">${peso(subtotal)}</span></span>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        document.getElementById("regTotalCash").textContent  = peso(totalCash);
+        document.getElementById("regBillCount").textContent  = billCount.toLocaleString();
+        document.getElementById("regCoinCount").textContent  = coinCount.toLocaleString();
+        document.getElementById("regActiveCount").textContent = activeCount.toString();
+
+        list.querySelectorAll("button[data-act]").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const denom = btn.dataset.denom;
+                const delta = btn.dataset.act === "inc" ? 1 : -1;
+                try {
+                    const data = await postDenom(formDelta(denom, delta));
+                    denomCache = data.denominations;
+                    renderRegister();
+                    renderDenomToggles();
+                    loadMetrics();
+                } catch (e) {
+                    toast(e.message, "error");
+                }
+            });
+        });
+
+        list.querySelectorAll("input.reg-qty-input").forEach(inp => {
+            inp.addEventListener("change", async () => {
+                const denom = inp.dataset.denom;
+                const q = Math.max(0, parseInt(inp.value, 10) || 0);
+                try {
+                    const data = await postDenom(formQtyUpdate(denom, q));
+                    denomCache = data.denominations;
+                    renderRegister();
+                    renderDenomToggles();
+                    loadMetrics();
+                    toast(`Quantity updated`, "success");
+                } catch (e) {
+                    toast(e.message, "error");
+                }
+            });
+            inp.addEventListener("focus", () => inp.select());
+        });
+    }
+
+    function renderDenomToggles() {
         const list = document.getElementById("denomList");
-        list.innerHTML = data.denominations.map(d => `
+        if (!list) return;
+        list.innerHTML = denomCache.map(d => `
             <div class="denom-toggle-card ${d.available ? "" : "disabled"}" data-denom="${d.denom}">
                 <div>
                     <div class="name">${escapeHtml(d.label)}</div>
-                    <div class="status">${d.available ? "Available" : "Out of Stock"}</div>
+                    <div class="status">${d.available ? "Available · Qty " + d.quantity : "Out of Stock"}</div>
                 </div>
                 <label class="toggle">
                     <input type="checkbox" ${d.available ? "checked" : ""} data-denom="${d.denom}" />
@@ -106,17 +222,25 @@
             cb.addEventListener("change", async (e) => {
                 const denom = e.target.dataset.denom;
                 const available = e.target.checked;
-                await fetch(`${CTX}/api/denominations`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/x-form-urlencoded" },
-                    body: `denom=${denom}&available=${available}`
-                });
-                const card = e.target.closest(".denom-toggle-card");
-                card.classList.toggle("disabled", !available);
-                card.querySelector(".status").textContent = available ? "Available" : "Out of Stock";
-                loadMetrics();
+                try {
+                    const data = await postDenom(formAvailUpdate(denom, available));
+                    denomCache = data.denominations;
+                    renderRegister();
+                    renderDenomToggles();
+                    loadMetrics();
+                } catch (err) {
+                    toast(err.message, "error");
+                }
             });
         });
+    }
+
+    async function loadDenoms() {
+        const r = await fetch(`${CTX}/api/denominations`);
+        const data = await r.json();
+        denomCache = data.denominations;
+        renderRegister();
+        renderDenomToggles();
     }
 
     loadMetrics(); loadInventory(); loadDenoms();
